@@ -13,8 +13,5 @@ public class Generator : IIncrementalGenerator
         // Initialize
     }
 
-    private void PostInitialize(IncrementalGeneratorPostInitializationContext context)
-    {
-        // Generate immutable code
-    }
+    private void PostInitialize(IncrementalGeneratorPostInitializationContext context) => AttributeConfig.AddTo(context);
 }
