@@ -1,21 +1,20 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
+using Microsoft.CodeAnalysis;
 
-namespace DarkLink.Roslyn.Asyncify
+namespace DarkLink.Roslyn.Asyncify;
+
+[Generator]
+public class Generator : IIncrementalGenerator
 {
-    [Generator]
-    public class Generator : IIncrementalGenerator
+    public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        public void Initialize(IncrementalGeneratorInitializationContext context)
-        {
-            context.RegisterPostInitializationOutput(PostInitialize);
+        context.RegisterPostInitializationOutput(PostInitialize);
 
-            // Initialize
-        }
+        // Initialize
+    }
 
-        private void PostInitialize(IncrementalGeneratorPostInitializationContext context)
-        {
-            // Generate immutable code
-        }
+    private void PostInitialize(IncrementalGeneratorPostInitializationContext context)
+    {
+        // Generate immutable code
     }
 }
