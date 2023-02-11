@@ -68,12 +68,17 @@ internal class CodeWriter : IDisposable
 
     private void WriteMethod()
     {
-        writer.WriteLine($"public static async Task {info.Method.Name}(this Task<{info.Method.ContainingType.ToDisplayString()}> ___this{FormatParameters()})");
+        writer.WriteLine($"public static async {FormatReturnType()} {info.Method.Name}(this Task<{info.Method.ContainingType.ToDisplayString()}> ___this{FormatParameters()})");
 
         using (Scope())
         {
             writer.WriteLine($"=> (await ___this).{info.Method.Name}({FormatArguments()});");
         }
+
+        string FormatReturnType()
+            => info.Method.ReturnsVoid
+                ? "Task"
+                : $"Task<{info.Method.ReturnType.ToDisplayString()}>";
 
         string FormatParameters() => string.Concat(info.Method.Parameters.Select(p => $", {FormatParameter(p)}"));
 
