@@ -235,6 +235,39 @@ internal static class Program
     }
 
     [TestMethod]
+    public async Task DoNotAsyncifyDefaultParametersOnMethod()
+    {
+        var source = @"
+using System;
+using System.Threading.Tasks;
+using DarkLink.Roslyn;
+
+internal class Subject
+{
+    public void CallMe(int number, bool boolean = true) => throw new NotImplementedException();
+}
+
+[Asyncify(typeof(Subject), nameof(Subject.CallMe), TransformParameters = true)]
+internal static partial class Extensions { }
+
+internal static class Program
+{
+    public static async Task Main()
+    {
+        var subject = Task.FromResult(new Subject());
+
+        await subject.CallMe(42, true);
+        await subject.CallMe(Task.FromResult(42), true);
+        await subject.CallMe(42);
+        await subject.CallMe(Task.FromResult(42));
+    }
+}
+";
+
+        await Verify(source);
+    }
+
+    [TestMethod]
     public async Task Empty()
     {
         var source = string.Empty;

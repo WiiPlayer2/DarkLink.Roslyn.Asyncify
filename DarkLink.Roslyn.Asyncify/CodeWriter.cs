@@ -46,12 +46,13 @@ internal class CodeWriter : IDisposable
             }
 
             parameters[index] = parameters[index] with {UseTask = false,};
-
             foreach (var config in Permutate(index + 1))
                 yield return config;
 
-            parameters[index] = parameters[index] with {UseTask = true,};
+            if (parameters[index].Parameter.HasExplicitDefaultValue)
+                yield break;
 
+            parameters[index] = parameters[index] with {UseTask = true,};
             foreach (var config in Permutate(index + 1))
                 yield return config;
         }
