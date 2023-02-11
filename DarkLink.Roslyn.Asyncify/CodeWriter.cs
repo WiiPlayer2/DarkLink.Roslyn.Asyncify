@@ -1,6 +1,8 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.IO;
+using System.Linq;
+using Microsoft.CodeAnalysis;
 
 namespace DarkLink.Roslyn.Asyncify;
 
@@ -60,11 +62,18 @@ internal class CodeWriter : IDisposable
 
     private void WriteMethod()
     {
-        writer.WriteLine($"public static async Task {info.Method.Name}(this Task<{info.Method.ContainingType.ToDisplayString()}> ___this)");
+        writer.WriteLine($"public static async Task {info.Method.Name}(this Task<{info.Method.ContainingType.ToDisplayString()}> ___this{string.Concat(info.Method.Parameters.Select(p => $", {FormatParameter(p)}"))})");
 
         using (Scope())
         {
-            writer.WriteLine($"=> (await ___this).{info.Method.Name}();");
+            writer.WriteLine($"=> (await ___this).{info.Method.Name}({string.Join(", ", info.Method.Parameters.Select(p => p.Name))});");
+        }
+
+        string FormatParameter(IParameterSymbol parameter)
+        {
+            if (parameter.HasExplicitDefaultValue)
+                return $"{parameter.Type.ToDisplayString()} {parameter.Name} = \"{parameter.ExplicitDefaultValue}\"";
+            return $"{parameter.Type.ToDisplayString()} {parameter.Name}";
         }
     }
 }
