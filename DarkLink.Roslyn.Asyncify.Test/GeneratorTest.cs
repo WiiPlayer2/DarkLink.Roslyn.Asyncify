@@ -33,6 +33,40 @@ internal static class Program
     }
 
     [TestMethod]
+    public async Task AsyncifyMethodWithOverloads()
+    {
+        var source = @"
+using System;
+using System.Threading.Tasks;
+using DarkLink.Roslyn;
+
+internal class Subject
+{
+    public void CallMe() => throw new NotImplementedException();
+    public void CallMe(int number) => throw new NotImplementedException();
+    public bool CallMe(int number, string text) => throw new NotImplementedException();
+}
+
+[Asyncify(typeof(Subject), nameof(Subject.CallMe))]
+internal static partial class Extensions { }
+
+internal static class Program
+{
+    public static async Task Main()
+    {
+        var subject = Task.FromResult(new Subject());
+
+        await subject.CallMe();
+        await subject.CallMe(42);
+        var result = await subject.CallMe(42, ""henlo"");
+    }
+}
+";
+
+        await Verify(source);
+    }
+
+    [TestMethod]
     public async Task AsyncifyMethodWithReturnValue()
     {
         var source = @"

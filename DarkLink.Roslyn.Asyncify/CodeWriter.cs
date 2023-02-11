@@ -91,29 +91,31 @@ internal class CodeWriter : IDisposable
 
         using (Scope())
         {
-            WriteMethod();
+            WriteMethods();
         }
 
         writer.WriteLine("}");
     }
 
-    private void WriteMethod()
+    private void WriteEmptyLine() => writer.WriteLineNoTabs(string.Empty);
+
+    private void WriteMethod(IMethodSymbol method)
     {
-        writer.WriteLine($"public static async {FormatReturnType()} {info.Method.Name}(this Task<{info.Method.ContainingType.ToDisplayString()}> ___this{FormatParameters()})");
+        writer.WriteLine($"public static async {FormatReturnType()} {method.Name}(this Task<{method.ContainingType.ToDisplayString()}> ___this{FormatParameters()})");
 
         using (Scope())
         {
-            writer.WriteLine($"=> (await ___this).{info.Method.Name}({FormatArguments()});");
+            writer.WriteLine($"=> (await ___this).{method.Name}({FormatArguments()});");
         }
 
         string FormatReturnType()
-            => info.Method.ReturnsVoid
+            => method.ReturnsVoid
                 ? "Task"
-                : $"Task<{info.Method.ReturnType.ToDisplayString()}>";
+                : $"Task<{method.ReturnType.ToDisplayString()}>";
 
-        string FormatParameters() => string.Concat(info.Method.Parameters.Select(p => $", {FormatParameter(p)}"));
+        string FormatParameters() => string.Concat(method.Parameters.Select(p => $", {FormatParameter(p)}"));
 
-        string FormatArguments() => string.Join(", ", info.Method.Parameters.Select(FormatArgument));
+        string FormatArguments() => string.Join(", ", method.Parameters.Select(FormatArgument));
 
         string FormatArgument(IParameterSymbol parameter) => SanitizeIdentifier(parameter.Name);
 
@@ -123,6 +125,20 @@ internal class CodeWriter : IDisposable
             if (parameter.HasExplicitDefaultValue)
                 parameterString += $" = {ToDefaultLiteral(parameter)}";
             return parameterString;
+        }
+    }
+
+    private void WriteMethods()
+    {
+        var first = true;
+        foreach (var method in info.Methods)
+        {
+            if (!first)
+                WriteEmptyLine();
+            else
+                first = false;
+
+            WriteMethod(method);
         }
     }
 }

@@ -27,8 +27,8 @@ public class Generator : IIncrementalGenerator
     private AsyncifyInfo CreateInfo(GeneratorAttributeSyntaxContext syntaxContext, IReadOnlyList<AttributeConfig> configs, CancellationToken cancellationToken)
     {
         var config = configs.First();
-        var method = config.TargetType.GetMembers(config.Method).OfType<IMethodSymbol>().First();
-        return new AsyncifyInfo(config, (INamedTypeSymbol) syntaxContext.TargetSymbol, method);
+        var methods = config.TargetType.GetMembers(config.Method).OfType<IMethodSymbol>().ToList();
+        return new AsyncifyInfo(config, (INamedTypeSymbol) syntaxContext.TargetSymbol, methods);
     }
 
     private void GenerateMethods(SourceProductionContext context, AsyncifyInfo info)
