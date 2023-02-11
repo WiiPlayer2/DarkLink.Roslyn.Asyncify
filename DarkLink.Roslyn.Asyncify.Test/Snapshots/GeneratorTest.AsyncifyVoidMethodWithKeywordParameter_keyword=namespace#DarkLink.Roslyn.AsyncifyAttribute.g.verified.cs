@@ -7,5 +7,6 @@ namespace DarkLink.Roslyn
     public class AsyncifyAttribute : Attribute
     {
         public AsyncifyAttribute(System.Type targetType, string method) { }
+        public bool TransformParameters { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -28,6 +29,32 @@ internal class CodeWriter : IDisposable
     {
         writer.Dispose();
         stringWriter.Dispose();
+    }
+
+    private IEnumerable<MethodConfig> PermutateVariants(IMethodSymbol method)
+    {
+        var parameters = method.Parameters.Select(p => new ParameterConfig(p, false)).ToArray();
+        foreach (var config in Permutate(0))
+            yield return config;
+
+        IEnumerable<MethodConfig> Permutate(int index)
+        {
+            if (index == parameters.Length)
+            {
+                yield return new MethodConfig(method, parameters);
+                yield break;
+            }
+
+            parameters[index] = parameters[index] with {UseTask = false,};
+
+            foreach (var config in Permutate(index + 1))
+                yield return config;
+
+            parameters[index] = parameters[index] with {UseTask = true,};
+
+            foreach (var config in Permutate(index + 1))
+                yield return config;
+        }
     }
 
     private IDisposable Reset()
@@ -99,33 +126,13 @@ internal class CodeWriter : IDisposable
 
     private void WriteEmptyLine() => writer.WriteLineNoTabs(string.Empty);
 
-    private void WriteMethod(IMethodSymbol method)
+    private void WriteMethod(TargetInfo target, IMethodSymbol method)
     {
-        writer.WriteLine($"public static async {FormatReturnType()} {method.Name}(this Task<{method.ContainingType.ToDisplayString()}> ___this{FormatParameters()})");
-
-        using (Scope())
-        {
-            writer.WriteLine($"=> (await ___this).{method.Name}({FormatArguments()});");
-        }
-
-        string FormatReturnType()
-            => method.ReturnsVoid
-                ? "Task"
-                : $"Task<{method.ReturnType.ToDisplayString()}>";
-
-        string FormatParameters() => string.Concat(method.Parameters.Select(p => $", {FormatParameter(p)}"));
-
-        string FormatArguments() => string.Join(", ", method.Parameters.Select(FormatArgument));
-
-        string FormatArgument(IParameterSymbol parameter) => SanitizeIdentifier(parameter.Name);
-
-        string FormatParameter(IParameterSymbol parameter)
-        {
-            var parameterString = $"{parameter.Type.ToDisplayString()} {SanitizeIdentifier(parameter.Name)}";
-            if (parameter.HasExplicitDefaultValue)
-                parameterString += $" = {ToDefaultLiteral(parameter)}";
-            return parameterString;
-        }
+        if (target.Config.TransformParameters)
+            foreach (var methodConfig in PermutateVariants(method))
+                WriteMethodVariant(methodConfig);
+        else
+            WriteMethodVariant(new MethodConfig(method, method.Parameters.Select(p => new ParameterConfig(p, false)).ToList()));
     }
 
     private void WriteMethods()
@@ -139,7 +146,50 @@ internal class CodeWriter : IDisposable
             else
                 first = false;
 
-            WriteMethod(method);
+            WriteMethod(target, method);
         }
     }
+
+    private void WriteMethodVariant(MethodConfig config)
+    {
+        writer.WriteLine($"public static async {FormatReturnType()} {config.Method.Name}(this Task<{config.Method.ContainingType.ToDisplayString()}> ___this{FormatParameters()})");
+
+        using (Scope())
+        {
+            writer.WriteLine($"=> (await ___this).{config.Method.Name}({FormatArguments()});");
+        }
+
+        string FormatReturnType()
+            => config.Method.ReturnsVoid
+                ? "Task"
+                : $"Task<{config.Method.ReturnType.ToDisplayString()}>";
+
+        string FormatParameters() => string.Concat(config.Parameters.Select(p => $", {FormatParameter(p)}"));
+
+        string FormatArguments() => string.Join(", ", config.Parameters.Select(FormatArgument));
+
+        string FormatArgument(ParameterConfig parameter)
+        {
+            var identifier = SanitizeIdentifier(parameter.Parameter.Name);
+            return parameter.UseTask
+                ? $"(await {identifier})"
+                : identifier;
+        }
+
+        string FormatParameter(ParameterConfig parameter)
+        {
+            var parameterType = parameter.Parameter.Type.ToDisplayString();
+            if (parameter.UseTask)
+                parameterType = $"Task<{parameterType}>";
+
+            var parameterString = $"{parameterType} {SanitizeIdentifier(parameter.Parameter.Name)}";
+            if (parameter.Parameter.HasExplicitDefaultValue)
+                parameterString += $" = {ToDefaultLiteral(parameter.Parameter)}";
+            return parameterString;
+        }
+    }
+
+    private record MethodConfig(IMethodSymbol Method, IReadOnlyList<ParameterConfig> Parameters);
+
+    private record ParameterConfig(IParameterSymbol Parameter, bool UseTask);
 }
