@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DarkLink.RoslynHelpers.AttributeGenerator" Version="0.0.1-1676058021">
+    <PackageReference Include="DarkLink.RoslynHelpers.AttributeGenerator" Version="0.0.1-1676099612">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

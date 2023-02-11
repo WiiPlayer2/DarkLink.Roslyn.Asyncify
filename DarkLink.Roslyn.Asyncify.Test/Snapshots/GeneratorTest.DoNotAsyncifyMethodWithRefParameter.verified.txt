@@ -1,0 +1,16 @@
+﻿{
+  Diagnostics: [
+    {
+      Id: ASYNCIFY01,
+      Title: Unable to asyncify method,
+      Severity: Warning,
+      WarningLevel: 1,
+      Location: : (11,1)-(11,50),
+      Description: ,
+      HelpLink: ,
+      MessageFormat: Unable to asyncify overloads of method {0}: {1},
+      Message: Unable to asyncify overloads of method CallMe: void(int),
+      Category: Asyncify
+    }
+  ]
+}

@@ -1,3 +1,7 @@
+using FluentAssertions;
+using FluentAssertions.Execution;
+using Microsoft.CodeAnalysis;
+
 namespace DarkLink.Roslyn.Asyncify.Test;
 
 [TestClass]
@@ -265,6 +269,43 @@ internal static class Program
 ";
 
         await Verify(source);
+    }
+
+    [TestMethod]
+    public async Task DoNotAsyncifyMethodWithRefParameter()
+    {
+        var source = @"
+using System;
+using System.Threading.Tasks;
+using DarkLink.Roslyn;
+
+internal class Subject
+{
+    public void CallMe(ref int number) => throw new NotImplementedException();
+    public void CallMe(string text) => throw new NotImplementedException();
+}
+
+[Asyncify(typeof(Subject), nameof(Subject.CallMe))]
+internal static partial class Extensions { }
+
+internal static class Program
+{
+    public static async Task Main()
+    {
+        var subject = Task.FromResult(new Subject());
+
+        await subject.CallMe(""test me"");
+    }
+}
+";
+
+        await Verify(source, (_, diagnostics) =>
+        {
+            using var __ = new AssertionScope();
+
+            diagnostics.Should().NotContain(d => d.Severity == DiagnosticSeverity.Error);
+            diagnostics.Should().Contain(d => d.Id == "ASYNCIFY01" && d.Severity == DiagnosticSeverity.Warning, "a warning should be present when a method cannot be asyncified.");
+        });
     }
 
     [TestMethod]
