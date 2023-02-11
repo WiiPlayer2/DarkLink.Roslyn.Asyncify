@@ -6,10 +6,8 @@ namespace DarkLink.Roslyn.Asyncify.Test;
 
 public abstract class VerifySourceGenerator : VerifyBase
 {
-    protected Task Verify(string source, Action<Compilation, ImmutableArray<Diagnostic>>? verifyCompilation, Func<SettingsTask, SettingsTask>? configure = default)
+    protected SettingsTask Verify(string source, Action<Compilation, ImmutableArray<Diagnostic>>? verifyCompilation)
     {
-        configure ??= _ => _;
-
         var syntaxTree = CSharpSyntaxTree.ParseText(source);
 
         var assemblyDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
@@ -36,16 +34,16 @@ public abstract class VerifySourceGenerator : VerifyBase
 
         verifyCompilation?.Invoke(updatedCompilation, diagnostics);
 
-        return configure(Verify(driver))
+        return Verify(driver)
             .UseDirectory("Snapshots");
     }
 
-    protected Task Verify(string source, Func<SettingsTask, SettingsTask>? configure = default) =>
+    protected SettingsTask Verify(string source) =>
         Verify(source, (compilation, _) =>
         {
             var diagnostics = compilation.GetDiagnostics();
             var errors = string.Join(Environment.NewLine, diagnostics
                 .Where(d => d.Severity == DiagnosticSeverity.Error));
             Assert.IsFalse(errors.Any(), $"Compilation failed:\n{string.Join("\n", errors)}");
-        }, configure);
+        });
 }

@@ -33,7 +33,8 @@ internal static class Program
 }}
 ";
 
-        await Verify(source, task => task.UseParameters(parameter));
+        await Verify(source)
+            .UseParameters(parameter);
     }
 
     [TestMethod]
@@ -235,7 +236,8 @@ internal static class Program
 }}
 ";
 
-        await Verify(source, task => task.UseParameters(keyword));
+        await Verify(source)
+            .UseParameters(keyword);
     }
 
     [TestMethod]
