@@ -53,6 +53,33 @@ internal static class Program
         await Verify(source);
     }
 
+    [DataRow("namespace")]
+    [DataRow("class")]
+    [DataTestMethod]
+    public async Task AsyncifyVoidMethodWithKeywordParameter(string keyword)
+    {
+        var source = @$"
+using System;
+using System.Threading.Tasks;
+using DarkLink.Roslyn;
+
+internal class Subject
+{{
+    public void CallMe(int @{keyword}) => throw new NotImplementedException();
+}}
+
+[Asyncify(typeof(Subject), nameof(Subject.CallMe))]
+internal static partial class Extensions {{ }}
+
+internal static class Program
+{{
+    public static Task Main() => Task.FromResult(new Subject()).CallMe(420);
+}}
+";
+
+        await Verify(source, task => task.UseParameters(keyword));
+    }
+
     [TestMethod]
     public async Task Empty()
     {

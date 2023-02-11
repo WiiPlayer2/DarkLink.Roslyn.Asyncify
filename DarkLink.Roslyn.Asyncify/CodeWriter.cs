@@ -3,6 +3,7 @@ using System.CodeDom.Compiler;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace DarkLink.Roslyn.Asyncify;
 
@@ -33,6 +34,11 @@ internal class CodeWriter : IDisposable
         writer.Indent = 0;
         return Disposable.Create(() => writer.Indent = originalIndent);
     }
+
+    private static string SanitizeIdentifier(string identifier)
+        => SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+            ? $"@{identifier}"
+            : identifier;
 
     private IDisposable Scope()
     {
@@ -73,13 +79,14 @@ internal class CodeWriter : IDisposable
 
         string FormatArguments() => string.Join(", ", info.Method.Parameters.Select(FormatArgument));
 
-        string FormatArgument(IParameterSymbol parameter) => parameter.Name;
+        string FormatArgument(IParameterSymbol parameter) => SanitizeIdentifier(parameter.Name);
 
         string FormatParameter(IParameterSymbol parameter)
         {
+            var parameterString = $"{parameter.Type.ToDisplayString()} {SanitizeIdentifier(parameter.Name)}";
             if (parameter.HasExplicitDefaultValue)
-                return $"{parameter.Type.ToDisplayString()} {parameter.Name} = \"{parameter.ExplicitDefaultValue}\"";
-            return $"{parameter.Type.ToDisplayString()} {parameter.Name}";
+                parameterString += $" = \"{parameter.ExplicitDefaultValue}\"";
+            return parameterString;
         }
     }
 }
