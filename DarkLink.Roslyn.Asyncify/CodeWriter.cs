@@ -131,7 +131,8 @@ internal class CodeWriter : IDisposable
     private void WriteMethods()
     {
         var first = true;
-        foreach (var method in info.Methods)
+        foreach (var target in info.Targets)
+        foreach (var method in target.Methods)
         {
             if (!first)
                 WriteEmptyLine();

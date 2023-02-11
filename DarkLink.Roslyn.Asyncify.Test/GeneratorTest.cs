@@ -92,6 +92,39 @@ internal static class Program
     }
 
     [TestMethod]
+    public async Task AsyncifyMultipleMethods()
+    {
+        var source = @"
+using System;
+using System.Threading.Tasks;
+using DarkLink.Roslyn;
+
+internal class Subject
+{
+    public void CallMe() => throw new NotImplementedException();
+    public void InvokeMe() => throw new NotImplementedException();
+}
+
+[Asyncify(typeof(Subject), nameof(Subject.CallMe))]
+[Asyncify(typeof(Subject), nameof(Subject.InvokeMe))]
+internal static partial class Extensions { }
+
+internal static class Program
+{
+    public static async Task Main()
+    {
+        var subject = Task.FromResult(new Subject());
+
+        await subject.CallMe();
+        await subject.InvokeMe();
+    }
+}
+";
+
+        await Verify(source);
+    }
+
+    [TestMethod]
     public async Task AsyncifyParameterLessVoidMethod()
     {
         var source = @"

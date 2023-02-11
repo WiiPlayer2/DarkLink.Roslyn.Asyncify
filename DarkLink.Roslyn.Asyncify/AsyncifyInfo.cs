@@ -4,4 +4,6 @@ using Microsoft.CodeAnalysis;
 
 namespace DarkLink.Roslyn.Asyncify;
 
-internal record AsyncifyInfo(AttributeConfig Config, INamedTypeSymbol ExtensionType, IReadOnlyList<IMethodSymbol> Methods);
+internal record TargetInfo(AttributeConfig Config, IReadOnlyList<IMethodSymbol> Methods);
+
+internal record AsyncifyInfo(INamedTypeSymbol ExtensionType, IReadOnlyList<TargetInfo> Targets);
