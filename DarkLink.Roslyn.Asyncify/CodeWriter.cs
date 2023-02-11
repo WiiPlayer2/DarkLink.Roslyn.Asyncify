@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace DarkLink.Roslyn.Asyncify;
 
@@ -44,6 +46,35 @@ internal class CodeWriter : IDisposable
     {
         writer.Indent++;
         return Disposable.Create(() => writer.Indent--);
+    }
+
+    private static string ToDefaultLiteral(IParameterSymbol parameter)
+        => parameter.Type.TypeKind == TypeKind.Enum
+            ? $"(({parameter.Type.ToDisplayString()}){ToLiteral(parameter.ExplicitDefaultValue)})"
+            : ToLiteral(parameter.ExplicitDefaultValue);
+
+    private static string ToLiteral(object? value)
+    {
+        return Map().ToString();
+
+        LiteralExpressionSyntax Map() => value switch
+        {
+            null => LiteralExpression(SyntaxKind.NullLiteralExpression),
+            string stringValue => LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(stringValue)),
+            int intValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(intValue)),
+            bool boolValue => LiteralExpression(boolValue ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression),
+            byte byteValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(byteValue)),
+            char charValue => LiteralExpression(SyntaxKind.CharacterLiteralExpression, Literal(charValue)),
+            double doubleValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(doubleValue)),
+            float floatValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(floatValue)),
+            long longValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(longValue)),
+            sbyte sbyteValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(sbyteValue)),
+            short shortValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(shortValue)),
+            uint uintValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(uintValue)),
+            ulong ulongValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(ulongValue)),
+            ushort ushortValue => LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(ushortValue)),
+            _ => throw new NotImplementedException($"Not implemented for type {value.GetType().AssemblyQualifiedName}"),
+        };
     }
 
     public override string ToString() => stringWriter.ToString();
@@ -90,7 +121,7 @@ internal class CodeWriter : IDisposable
         {
             var parameterString = $"{parameter.Type.ToDisplayString()} {SanitizeIdentifier(parameter.Name)}";
             if (parameter.HasExplicitDefaultValue)
-                parameterString += $" = \"{parameter.ExplicitDefaultValue}\"";
+                parameterString += $" = {ToDefaultLiteral(parameter)}";
             return parameterString;
         }
     }

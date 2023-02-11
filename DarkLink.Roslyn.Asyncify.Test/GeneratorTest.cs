@@ -3,6 +3,35 @@ namespace DarkLink.Roslyn.Asyncify.Test;
 [TestClass]
 public class GeneratorTest : VerifySourceGenerator
 {
+    [DataRow("int number = 42")]
+    [DataRow("bool boolean = true")]
+    [DataRow("object obj = null")]
+    [DataRow("AttributeTargets idk = AttributeTargets.All")]
+    [DataTestMethod]
+    public async Task AsyncifyMethodWithDefaultParameter(string parameter)
+    {
+        var source = @$"
+using System;
+using System.Threading.Tasks;
+using DarkLink.Roslyn;
+
+internal class Subject
+{{
+    public void CallMe({parameter}) => throw new NotImplementedException();
+}}
+
+[Asyncify(typeof(Subject), nameof(Subject.CallMe))]
+internal static partial class Extensions {{ }}
+
+internal static class Program
+{{
+    public static Task Main() => Task.FromResult(new Subject()).CallMe();
+}}
+";
+
+        await Verify(source, task => task.UseParameters(parameter));
+    }
+
     [TestMethod]
     public async Task AsyncifyMethodWithReturnValue()
     {
